@@ -1,0 +1,65 @@
+name: Continuous LLM Evaluation & Testing
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  eval-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+
+      - name: Start Ollama server
+        run: |
+          nohup ollama serve > ollama.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:11434 > /dev/null; then
+              echo "Ollama is up"
+              break
+            fi
+            echo "Waiting for Ollama..."
+            sleep 2
+          done
+
+      - name: Pull judge model
+        run: ollama pull llama3.2:1b
+
+      - name: Pull embedding model
+        run: ollama pull nomic-embed-text
+
+      - name: Seed the vector store
+        env:
+          QDRANT_HOST: localhost
+          OLLAMA_BASE_URL: http://localhost:11434
+        run: python src/vectorstore/ingest.py
+
+      - name: Run DeepEval Quality Tests
+        env:
+          QDRANT_HOST: localhost
+          OLLAMA_BASE_URL: http://localhost:11434
+        run: pytest src/evals/test_rag_eval.py
