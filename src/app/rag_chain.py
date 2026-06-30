@@ -9,12 +9,13 @@ from qdrant_client import QdrantClient
 
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")
 QDRANT_HOST = os.getenv("QDRANT_HOST", "qdrant")
+MODEL_NAME = os.getenv("MODEL_NAME", "qwen2.5:14b")
 
 class RAGPipeline:
     def __init__(self):
         self.llm = OllamaLLM(
             base_url=OLLAMA_URL, 
-            model="qwen2.5:14b",
+            model=MODEL_NAME,
             temperature=0.0 
         )
         self.embeddings = OllamaEmbeddings(base_url=OLLAMA_URL, model="nomic-embed-text")
