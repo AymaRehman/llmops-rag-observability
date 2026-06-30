@@ -60,6 +60,7 @@ jobs:
 
       - name: Run DeepEval Quality Tests
         env:
+          PYTHONPATH: ${{ github.workspace }}
           QDRANT_HOST: localhost
           OLLAMA_BASE_URL: http://localhost:11434
         run: pytest src/evals/test_rag_eval.py
