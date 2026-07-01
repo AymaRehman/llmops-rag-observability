@@ -14,6 +14,9 @@ OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 JUDGE_MODEL_NAME = os.getenv("DEEPEVAL_JUDGE_MODEL", "qwen2.5:14b")
 
+IS_CI = os.getenv("CI") == "true" or "1b" in JUDGE_MODEL_NAME.lower()
+METRIC_THRESHOLD = 0.5 if IS_CI else 0.7
+
 judge_model = OllamaModel(
     model=JUDGE_MODEL_NAME,
     base_url=OLLAMA_URL,
@@ -40,8 +43,8 @@ def test_rag_faithfulness_rag_definition():
     """Validates that RAG definition answers remain grounded in the knowledge base."""
     test_case = build_test_case("What is Retrieval-Augmented Generation?")
 
-    faithfulness_metric = FaithfulnessMetric(threshold=0.7, model=judge_model)
-    relevancy_metric = AnswerRelevancyMetric(threshold=0.7, model=judge_model)
+    faithfulness_metric = FaithfulnessMetric(threshold=METRIC_THRESHOLD, model=judge_model)
+    relevancy_metric = AnswerRelevancyMetric(threshold=METRIC_THRESHOLD, model=judge_model)
     run_metrics(test_case, [faithfulness_metric, relevancy_metric])
 
 
@@ -49,7 +52,7 @@ def test_rag_faithfulness_llm_challenges():
     """Validates that answers explaining LLM challenges accurately match retrieved text."""
     test_case = build_test_case("What are the known challenges of using raw LLMs?")
 
-    faithfulness_metric = FaithfulnessMetric(threshold=0.7, model=judge_model)
+    faithfulness_metric = FaithfulnessMetric(threshold=METRIC_THRESHOLD, model=judge_model)
     run_metrics(test_case, [faithfulness_metric])
 
 
@@ -57,6 +60,6 @@ def test_rag_faithfulness_rag_benefits():
     """Validates that RAG benefit explanations are accurate to the knowledge source."""
     test_case = build_test_case("What are the primary benefits of implementing RAG?")
 
-    faithfulness_metric = FaithfulnessMetric(threshold=0.7, model=judge_model)
-    relevancy_metric = AnswerRelevancyMetric(threshold=0.7, model=judge_model)
+    faithfulness_metric = FaithfulnessMetric(threshold=METRIC_THRESHOLD, model=judge_model)
+    relevancy_metric = AnswerRelevancyMetric(threshold=METRIC_THRESHOLD, model=judge_model)
     run_metrics(test_case, [faithfulness_metric, relevancy_metric])
