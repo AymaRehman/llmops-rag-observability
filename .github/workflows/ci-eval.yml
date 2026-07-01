@@ -66,4 +66,5 @@ jobs:
           QDRANT_HOST: localhost
           OLLAMA_BASE_URL: http://localhost:11434
           MODEL_NAME: llama3.2:1b
+          DEEPEVAL_JUDGE_MODEL: llama3.2:1b
         run: pytest src/evals/test_rag_eval.py
