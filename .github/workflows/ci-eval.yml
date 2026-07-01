@@ -54,8 +54,10 @@ jobs:
 
       - name: Seed the vector store
         env:
+          PYTHONPATH: ${{ github.workspace }}
           QDRANT_HOST: localhost
           OLLAMA_BASE_URL: http://localhost:11434
+          MODEL_NAME: llama3.2:1b
         run: python src/vectorstore/ingest.py
 
       - name: Run DeepEval Quality Tests
@@ -63,4 +65,5 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
           QDRANT_HOST: localhost
           OLLAMA_BASE_URL: http://localhost:11434
+          MODEL_NAME: llama3.2:1b
         run: pytest src/evals/test_rag_eval.py
