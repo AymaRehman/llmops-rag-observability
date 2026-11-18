@@ -1,0 +1,53 @@
+name: Kubernetes Smoke Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy-kind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: rag
+
+      - name: Build and load API image
+        run: |
+          docker build -t rag-api:local .
+          kind load docker-image rag-api:local --name rag
+
+      # The large chat model is skipped here: the smoke test only needs the
+      # embedding model (pulled by the ingest job) to seed Qdrant and start the API.
+      - name: Deploy core services
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/config.yaml -f k8s/qdrant.yaml -f k8s/ollama.yaml
+          kubectl apply -f k8s/ingest-job.yaml -f k8s/api.yaml
+
+      - name: Wait for ingest and API
+        run: |
+          kubectl -n rag wait --for=condition=complete job/rag-ingest --timeout=900s
+          kubectl -n rag rollout status deployment/rag-api --timeout=300s
+
+      - name: Check the API serves metrics
+        run: |
+          kubectl -n rag port-forward svc/rag-api 8000:8000 &
+          sleep 5
+          curl -sf http://localhost:8000/metrics | grep rag_queries_total
+
+      - name: Show cluster state on failure
+        if: failure()
+        run: |
+          kubectl -n rag get pods,jobs,svc
+          kubectl -n rag describe pods
+          kubectl -n rag logs job/rag-ingest --all-containers --tail=100 || true
+          kubectl -n rag logs deployment/rag-api --all-containers --tail=100 || true
