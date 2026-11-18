@@ -19,7 +19,7 @@ class QueryRequest(BaseModel):
     prompt: str
 
 @app.post("/query")
-async def query_rag(request: QueryRequest):
+def query_rag(request: QueryRequest):
     clean_prompt = validate_user_input(request.prompt)
     
     start_time = time.time()
