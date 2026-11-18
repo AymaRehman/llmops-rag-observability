@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rag-ingest
+  namespace: rag
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: pull-embedding-model
+          image: ollama/ollama:latest
+          envFrom:
+            - configMapRef: { name: rag-config }
+          command: ["/bin/sh", "-c"]
+          args:
+            - until ollama pull nomic-embed-text; do echo "waiting for ollama..."; sleep 5; done
+        - name: wait-for-qdrant
+          image: curlimages/curl:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - until curl -sf http://qdrant:6333/readyz > /dev/null; do echo "waiting for qdrant..."; sleep 3; done
+      containers:
+        - name: ingest
+          image: rag-api:local
+          imagePullPolicy: IfNotPresent
+          workingDir: /app
+          envFrom:
+            - configMapRef: { name: rag-config }
+          command: ["python", "src/vectorstore/ingest.py"]

@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ollama-pull-models
+  namespace: rag
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: pull
+          image: ollama/ollama:latest
+          envFrom:
+            - configMapRef: { name: rag-config }
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              until ollama pull "$MODEL_NAME"; do echo "waiting for ollama..."; sleep 5; done
+              ollama pull llama-guard3:1b
+              ollama pull nomic-embed-text
