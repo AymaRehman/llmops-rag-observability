@@ -9,6 +9,7 @@ on:
 jobs:
   eval-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 45    
 
     services:
       qdrant:
@@ -47,7 +48,9 @@ jobs:
           done
 
       - name: Pull judge model
-        run: ollama pull llama3.2:1b
+        run: |
+          ollama pull llama3.2:1b
+          ollama pull qwen2.5:3b
 
       - name: Pull embedding model
         run: ollama pull nomic-embed-text
@@ -66,7 +69,7 @@ jobs:
           QDRANT_HOST: localhost
           OLLAMA_BASE_URL: http://localhost:11434
           MODEL_NAME: llama3.2:1b
-          DEEPEVAL_JUDGE_MODEL: llama3.2:1b
-          DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE: "1200"
+          DEEPEVAL_JUDGE_MODEL: qwen2.5:3b
+          DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE: "600"
 
         run: pytest src/evals/test_rag_eval.py
